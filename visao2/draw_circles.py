@@ -1,4 +1,4 @@
-__author__      = "Matheus Dib, Fabio de Miranda"
+__author__      = "Daniel Ruhman, Marcelo Prado"
 
 
 import cv2
