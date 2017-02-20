@@ -18,6 +18,10 @@ cap.set(cv.CV_CAP_PROP_FRAME_HEIGHT, 480)
 lower = 0
 upper = 1
 
+distance = 0
+distanceText = ""
+angle = 0
+
 # Returns an image containing the borders of the image
 # sigma is how far from the median we are setting the thresholds
 def auto_canny(image, sigma=0.33):
@@ -68,8 +72,18 @@ while(True):
         KNOWN_WIDTH = 6.5
 
         focalLength = 519.230769231
-        print circles
         for i in circles[0,:]:
+            if len(circles[0,:]) == 3:
+                for j in c:
+                    # returns ( center (x,y), (width, height), angle of rotation )
+                    rect = cv2.minAreaRect(c)
+                    box = cv2.cv.BoxPoints(rect)
+                    box = np.int0(box)
+                    cv2.drawContours(c,[box],0,(0,255,0),100)
+                    angle = rect[2]
+            else:
+                distance = 'circles not found'
+                break
             # draw the outer circle
             # cv2.circle(img, center, radius, color[, thickness[, lineType[, shift]]])
             cv2.circle(bordas_color,(i[0],i[1]),i[2],(0,255,0),2)
@@ -77,10 +91,8 @@ while(True):
             cv2.circle(bordas_color,(i[0],i[1]),2,(0,0,255),3)
             # focalLength = (135 * KNOWN_DISTANCE) / KNOWN_WIDTH
             # print focalLength
-            pixels = distance_to_camera(KNOWN_WIDTH, focalLength, i[2]*2)
-            print pixels
-            # center = (i[0],i[1])
-            rect = cv2.minAreaRect(c)
+            distance = distance_to_camera(KNOWN_WIDTH, focalLength, i[2]*2)
+            distanceText = "{0:.2f} cm".format(distance)
 
 
     # # Draw a diagonal blue line with thickness of 5 px
@@ -90,12 +102,11 @@ while(True):
     # # cv2.rectangle(img, pt1, pt2, color[, thickness[, lineType[, shift]]])
     # cv2.rectangle(bordas_color,(384,0),(510,128),(0,255,0),3)
     #
-    # # cv2.putText(img, text, org, fontFace, fontScale, color[, thickness[, lineType[, bottomLeftOrigin]]])
-    # font = cv2.FONT_HERSHEY_SIMPLEX
-    # cv2.putText(bordas_color,'Ninjutsu ;)',(0,50), font, 2,(255,255,255),2,cv2.CV_AA)
+    # cv2.putText(img, text, org, fontFace, fontScale, color[, thickness[, lineType[, bottomLeftOrigin]]])
+    font = cv2.FONT_HERSHEY_SIMPLEX
 
-    #More drawing functions @ http://docs.opencv.org/2.4/modules/core/doc/drawing_functions.html
-
+    text = ("{0}, {1} graus").format(distanceText, angle)
+    cv2.putText(bordas_color,text,(0,50), font, 1.5,(255,255,255),2,cv2.CV_AA)
     # Display the resulting frame
     cv2.imshow('Detector de circulos',bordas_color)
     #print("No circles were found")
