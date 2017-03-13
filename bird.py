@@ -2,8 +2,8 @@ import numpy as np
 import cv2
 
 def get_center():
-    min = video_width - (video_width * center_threshold)
-    max = video_width + (video_width * center_threshold)
+    min = (video_width // 2) - (video_width * center_threshold)
+    max = (video_width // 2) + (video_width * center_threshold)
     return min, max
 
 video = cv2.VideoCapture('red_bird.mp4')
@@ -65,7 +65,6 @@ while(1):
 
         status = get_direction(x)
         print(status)
-        print('')
 
         # ======= CAM SHIFT EXAMPLE =======
         # ret, track_window = cv2.CamShift(dst, track_window, term_crit)
@@ -79,8 +78,8 @@ while(1):
         k = cv2.waitKey(20) & 0xff
         if k == 27:
             break
-        else:
-            cv2.imwrite(chr(k)+".jpg",frame)
+        # else: faz algum screenshot do ctrl C
+            # cv2.imwrite(chr(k)+".jpg",frame)
 
     else:
         break
