@@ -7,22 +7,19 @@ import argparse
 import cv2
 import rospy
 from geometry_msgs.msg import Twist
+from cv_bridge import CvBridge, CvBridgeError
 
-# initialize the current frame of the video, along with the list of
-# ROI points along with whether or not this is input mode
+bridge = CvBridge()
+
+cv_image = None
 frame = None
 roiPts = []
 inputMode = False
 
+# select 4 points of interest
 def selectROI(event, x, y, flags, param):
-    # grab the reference to the current frame, list of ROI
-    # points and whether or not it is ROI selection mode
     global frame, roiPts, inputMode
 
-    # if we are in ROI selection mode, the mouse was clicked,
-    # and we do not already have four points, then update the
-    # list of ROI points with the (x, y) location of the click
-    # and draw the circle
     if inputMode and event == cv2.EVENT_LBUTTONDOWN and len(roiPts) < 4:
         roiPts.append((x, y))
         cv2.circle(frame, (x, y), 4, (0, 255, 0), 2)
@@ -32,8 +29,8 @@ def selectROI(event, x, y, flags, param):
 video_width, video_height = 0, 0
 center_min, center_max = 0, 0
 center_threshold = 0.1
-
-default_area = 10000 # pixel density
+# pixel density
+default_area = 10000
 
 def get_center():
     global video_width, video_height
@@ -51,6 +48,31 @@ def get_direction(x):
         return 'right'
 
 
+
+def img_callback(img):
+	global cv_image
+	now = rospy.get_rostime()
+	imgtime = img.header.stamp
+	lag = now-imgtime
+	delay = (lag.secs+lag.nsecs/1000000000.0)
+	if delay > atraso:
+		return
+	print("DELAY", delay)
+	try:
+		antes = time.clock()
+		cv_image = bridge.imgmsg_to_cv2(img, "bgr8")
+		cv2.imshow("video", cv_image)
+		cv2.waitKey(1)
+		depois = time.clock()
+		print ("TEMPO", depois-antes)
+	except CvBridgeError as e:
+		print(e)
+
+
+def init_ros():
+    rospy.init_node("vision")
+    recebedor = rospy.Subscriber("/camera/image_raw", Image, img_callback, queue_size=10, buff_size = 2**24)
+
 def main():
     # construct the argument parse and parse the arguments
     ap = argparse.ArgumentParser()
@@ -58,15 +80,14 @@ def main():
         help = "path to the (optional) video file")
     args = vars(ap.parse_args())
 
-    # grab the reference to the current frame, list of ROI
-    # points and whether or not it is ROI selection mode
+    # variables of interest
     global frame, roiPts, inputMode, video_width, video_height, center_min, center_max
 
     # if the video path was not supplied, grab the reference to the
     # camera
     if not args.get("video", False):
-        camera = cv2.VideoCapture(0)
-
+        # camera = cv2.VideoCapture(0)
+        camera = cv_image
         # otherwise, load the video
     else:
         camera = cv2.VideoCapture(args["video"])
@@ -81,23 +102,16 @@ def main():
     cv2.namedWindow("frame")
     cv2.setMouseCallback("frame", selectROI)
 
-    # initialize the termination criteria for cam shift, indicating
-    # a maximum of ten iterations or movement by a least one pixel
-    # along with the bounding box of the ROI
     termination = (cv2.TERM_CRITERIA_EPS | cv2.TERM_CRITERIA_COUNT, 10, 1)
     roiBox = None
 
-    # keep looping over the frames
     while True:
-        # grab the current frame
         (grabbed, frame) = camera.read()
 
-        # check to see if we have reached the end of the
-        # video
+        # has the film ended?
         if not grabbed:
             break
 
-        # if the see if the ROI has been computed
         if roiBox is not None:
             # convert the current frame to the HSV color space
             # and perform mean shift
@@ -136,19 +150,14 @@ def main():
         # handle if the 'i' key is pressed, then go into ROI
         # selection mode
         if key == ord("i") and len(roiPts) < 4:
-            # indicate that we are in input mode and clone the
-            # frame
             inputMode = True
             orig = frame.copy()
 
-            # keep looping until 4 reference ROI points have
-            # been selected; press any key to exit ROI selction
-            # mode once 4 points have been selected
             while len(roiPts) < 4:
                 cv2.imshow("frame", frame)
                 cv2.waitKey(0)
 
-            # determine the top-left and bottom-right points
+            # get top-left and bottom-right points
             roiPts = np.array(roiPts)
             s = roiPts.sum(axis = 1)
             tl = roiPts[np.argmin(s)]
@@ -185,9 +194,7 @@ def main():
     	th = 0
     	status = 0
     	try:
-    		print msg
-    		print vels(speed,turn)
-    		while(1):
+    		while not rospy.is_shutdown():
     			key = key_binding
     			if key in moveBindings.keys():
     				x = moveBindings[key][0]
