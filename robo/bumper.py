@@ -17,11 +17,25 @@ class BumperStop(object):
         self.bumped = msg.leftFront or msg.leftSide or msg.rightFront or msg.rightSide
 
     def run(self):
-        r = rospy.Rate(10)
+        r = rospy.Rate(100)
+	speed = rospy.get_param("~speed", 0.5)
+	turn = rospy.get_param("~turn", 1.0)
         while not rospy.is_shutdown():
-            speed = 0 if self.bumped else 0.1
-            velMsg = Twist(linear=Vector3(x = speed), angular=Vector3(z=0))
-            self.cmdPub.publish(velMsg)
+            if self.bumped:
+                print ("bump")
+                x = -1
+                y = 0
+                z = 0
+                th = -1
+            else:
+                x = 1
+                y = 0
+                z = 0
+                th = 0
+            twist = Twist()
+            twist.linear.x = x*speed; twist.linear.y = y*speed; twist.linear.z = z*speed;
+            twist.angular.x = 0; twist.angular.y = 0; twist.angular.z = th*turn
+            self.cmdPub.publish(twist)
             r.sleep()
 
 
