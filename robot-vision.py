@@ -25,7 +25,6 @@ def selectROI(event, x, y, flags, param):
         cv2.circle(frame, (x, y), 4, (0, 255, 0), 2)
         cv2.imshow("frame", frame)
 
-
 video_width, video_height = 0, 0
 center_min, center_max = 0, 0
 center_threshold = 0.1
@@ -82,7 +81,6 @@ def main():
 
     # variables of interest
     global frame, roiPts, inputMode, video_width, video_height, center_min, center_max
-
     # if the video path was not supplied, grab the reference to the
     # camera
     if not args.get("video", False):
